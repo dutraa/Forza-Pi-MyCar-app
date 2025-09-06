@@ -157,21 +157,32 @@ def get_forza_css():
         
         /* Button styling */
         .stButton > button {
-            background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 600;
-            font-size: 1.1rem;
-            padding: 0.7rem 2rem;
-            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
-            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-family: 'Rajdhani', sans-serif !important;
+            font-weight: 600 !important;
+            font-size: 1.1rem !important;
+            padding: 0.7rem 2rem !important;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4) !important;
+            transition: all 0.3s ease !important;
+            opacity: 1 !important;
         }
         
         .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6);
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6) !important;
+        }
+        
+        .stButton > button:focus {
+            background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%) !important;
+            color: white !important;
+            outline: none !important;
+        }
+        
+        .stButton > button:active {
+            background: linear-gradient(45deg, #e55a2e 0%, #e6841a 100%) !important;
         }
         
         /* Input field styling */
