@@ -5,9 +5,10 @@ Modular Streamlit UI components for the application
 """
 
 import streamlit as st
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 from config.settings import CLASS_COLORS, UI_TEXT
 from utils.pi_calculator import get_class_info
+from utils.vin_decoder import VINDecoder, VehicleInfo
 
 def render_header():
     """Render the main application header"""
