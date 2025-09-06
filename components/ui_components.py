@@ -122,65 +122,99 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None) -> T
     # Create sub-columns for input fields
     input_col1, input_col2 = st.columns(2)
     
+    # Widget constraints (min_value, max_value, default)
+    HP_MIN, HP_MAX, HP_DEFAULT = 50, 2000, 300
+    WEIGHT_MIN, WEIGHT_MAX, WEIGHT_DEFAULT = 1000, 8000, 3500
+    SPEED_MIN, SPEED_MAX, SPEED_DEFAULT = 60, 300, 150
+    ACCEL_MIN, ACCEL_MAX, ACCEL_DEFAULT = 2.0, 15.0, 5.0
+    HANDLING_MIN, HANDLING_MAX, HANDLING_DEFAULT = 0.5, 2.0, 1.0
+    BRAKING_MIN, BRAKING_MAX, BRAKING_DEFAULT = 80, 200, 120
+    
     # Default values and hints
-    default_hp = 300
-    default_weight = 3500
+    default_hp = HP_DEFAULT
+    default_weight = WEIGHT_DEFAULT
     hp_help = "Engine horsepower (HP)"
     weight_help = "Vehicle curb weight in pounds"
     
-    # Apply hints if available
+    # Apply hints if available with proper validation
+    clamped_values = []
     if hints:
         if 'estimated_hp_from_displacement' in hints:
-            default_hp = hints['estimated_hp_from_displacement']
-            hp_help += f" (Hint: ~{default_hp} HP estimated from engine size)"
+            estimated_hp = hints['estimated_hp_from_displacement']
+            # Clamp to valid range
+            default_hp = max(HP_MIN, min(HP_MAX, estimated_hp))
+            
+            if estimated_hp > HP_MAX:
+                hp_help += f" (Hint: Estimated {estimated_hp} HP from engine - clamped to max {HP_MAX} HP)"
+                clamped_values.append(f"HP: {estimated_hp} → {HP_MAX}")
+            elif estimated_hp < HP_MIN:
+                hp_help += f" (Hint: Estimated {estimated_hp} HP from engine - adjusted to min {HP_MIN} HP)"
+                clamped_values.append(f"HP: {estimated_hp} → {HP_MIN}")
+            else:
+                hp_help += f" (Hint: ~{default_hp} HP estimated from engine size)"
         
         if 'estimated_weight_range' in hints:
             min_w, max_w = hints['estimated_weight_range']
-            default_weight = int((min_w + max_w) / 2)  # Use middle of range
-            weight_help += f" (Hint: Typical range {min_w:,}-{max_w:,} lbs for this vehicle type)"
+            estimated_weight = int((min_w + max_w) / 2)
+            
+            # Clamp to valid range
+            default_weight = max(WEIGHT_MIN, min(WEIGHT_MAX, estimated_weight))
+            
+            if estimated_weight > WEIGHT_MAX:
+                weight_help += f" (Hint: Estimated {estimated_weight:,} lbs - clamped to max {WEIGHT_MAX:,} lbs)"
+                clamped_values.append(f"Weight: {estimated_weight:,} → {WEIGHT_MAX:,}")
+            elif estimated_weight < WEIGHT_MIN:
+                weight_help += f" (Hint: Estimated {estimated_weight:,} lbs - adjusted to min {WEIGHT_MIN:,} lbs)"
+                clamped_values.append(f"Weight: {estimated_weight:,} → {WEIGHT_MIN:,}")
+            else:
+                weight_help += f" (Hint: Typical range {min_w:,}-{max_w:,} lbs for this vehicle type)"
+    
+    # Show clamped values warning if any
+    if clamped_values:
+        st.warning(f"⚠️ **Values Adjusted:** Some estimates exceeded limits and were adjusted: {', '.join(clamped_values)}")
     
     with input_col1:
         hp = st.number_input("🔥 Horsepower (HP)", 
                            value=default_hp, 
                            step=10, 
-                           min_value=50, 
-                           max_value=2000,
+                           min_value=HP_MIN, 
+                           max_value=HP_MAX,
                            help=hp_help)
         
         weight = st.number_input("⚖️ Weight (lbs)", 
                                value=default_weight, 
                                step=50, 
-                               min_value=1000, 
-                               max_value=8000,
+                               min_value=WEIGHT_MIN, 
+                               max_value=WEIGHT_MAX,
                                help=weight_help)
         
         top_speed = st.number_input("💨 Top Speed (mph)", 
-                                  value=150, 
+                                  value=SPEED_DEFAULT, 
                                   step=5, 
-                                  min_value=60, 
-                                  max_value=300,
+                                  min_value=SPEED_MIN, 
+                                  max_value=SPEED_MAX,
                                   help="Maximum speed in miles per hour")
     
     with input_col2:
         acceleration = st.number_input("⏱️ 0-60 mph Time (seconds)", 
-                                     value=5.0, 
+                                     value=ACCEL_DEFAULT, 
                                      step=0.1, 
-                                     min_value=2.0, 
-                                     max_value=15.0,
+                                     min_value=ACCEL_MIN, 
+                                     max_value=ACCEL_MAX,
                                      help="Time to accelerate from 0 to 60 mph")
         
         handling = st.number_input("🌀 Handling G-Force", 
-                                 value=1.0, 
+                                 value=HANDLING_DEFAULT, 
                                  step=0.01, 
-                                 min_value=0.5, 
-                                 max_value=2.0,
+                                 min_value=HANDLING_MIN, 
+                                 max_value=HANDLING_MAX,
                                  help="Maximum lateral G-force in cornering")
         
         braking = st.number_input("🛑 Braking Distance 60-0 (feet)", 
-                                value=120, 
+                                value=BRAKING_DEFAULT, 
                                 step=5, 
-                                min_value=80, 
-                                max_value=200,
+                                min_value=BRAKING_MIN, 
+                                max_value=BRAKING_MAX,
                                 help="Distance to stop from 60 mph to 0")
     
     # Show additional VIN info if available
