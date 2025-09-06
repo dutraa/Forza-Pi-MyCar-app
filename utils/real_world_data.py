@@ -103,26 +103,31 @@ class RealWorldDataManager:
     
     def _load_cached_data(self) -> List[RealWorldVehicle]:
         """Load cached real-world vehicle data"""
-        if os.path.exists(self.cache_file):
-            try:
-                with open(self.cache_file, 'r') as f:
-                    data = json.load(f)
-                    
-                # Check if cache is still valid
-                cache_time = datetime.fromisoformat(data.get('timestamp', '2000-01-01'))
-                if datetime.now() - cache_time < self.cache_duration:
-                    vehicles = []
-                    for vehicle_data in data.get('vehicles', []):
-                        vehicles.append(RealWorldVehicle(**vehicle_data))
-                    return vehicles
-            except (json.JSONDecodeError, TypeError, ValueError):
-                pass
+        if not self.cache_enabled or not os.path.exists(self.cache_file):
+            return self._get_sample_data()
+            
+        try:
+            with open(self.cache_file, 'r') as f:
+                data = json.load(f)
+                
+            # Check if cache is still valid
+            cache_time = datetime.fromisoformat(data.get('timestamp', '2000-01-01'))
+            if datetime.now() - cache_time < self.cache_duration:
+                vehicles = []
+                for vehicle_data in data.get('vehicles', []):
+                    vehicles.append(RealWorldVehicle(**vehicle_data))
+                return vehicles
+        except (json.JSONDecodeError, TypeError, ValueError, OSError):
+            pass
         
         # Return sample data if cache is invalid or doesn't exist
         return self._get_sample_data()
     
     def _save_cached_data(self, vehicles: List[RealWorldVehicle]):
         """Save vehicle data to cache"""
+        if not self.cache_enabled:
+            return
+            
         try:
             data = {
                 'timestamp': datetime.now().isoformat(),
