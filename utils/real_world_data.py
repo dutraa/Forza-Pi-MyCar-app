@@ -98,8 +98,8 @@ class RealWorldDataManager:
         self.google_sheets_id = "1IStNOtVWi8DLEUXqPLAWMPDiIvQzX_msrmFfd4dOfI4"
         self.cache_duration = timedelta(hours=24)  # Cache for 24 hours
         
-        # Initialize with sample data if no external source available
-        self.vehicles_database = self._load_cached_data()
+        # Initialize with sample data + Excel data if available
+        self.vehicles_database = self._load_all_data()
     
     def _load_cached_data(self) -> List[RealWorldVehicle]:
         """Load cached real-world vehicle data"""
