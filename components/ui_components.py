@@ -320,7 +320,7 @@ def render_footer():
     </div>
     """, unsafe_allow_html=True)
 
-def render_sidebar(similar_cars_count: int, forza_class: str):
+def render_sidebar(similar_cars_count: int, forza_class: str, vehicle_info: Optional[VehicleInfo] = None):
     """Render sidebar with application information"""
     with st.sidebar:
         st.markdown("""
@@ -328,6 +328,25 @@ def render_sidebar(similar_cars_count: int, forza_class: str):
             <h2 style="color: #ff6b35; font-family: 'Orbitron', monospace;">🏎️ About PI</h2>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Show VIN vehicle info if available
+        if vehicle_info and vehicle_info.is_valid:
+            st.markdown("""
+            <div style="background: linear-gradient(45deg, rgba(0, 191, 255, 0.1) 0%, rgba(30, 144, 255, 0.1) 100%); 
+                        border: 2px solid #00bfff; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                <h4 style="color: #00bfff; text-align: center; margin-bottom: 0.5rem;">🚗 Your Vehicle</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            summary = VINDecoder.get_vehicle_summary(vehicle_info)
+            st.write(f"**{summary}**")
+            
+            if vehicle_info.body_class:
+                st.write(f"Type: {vehicle_info.body_class}")
+            if vehicle_info.drive_type:
+                st.write(f"Drive: {vehicle_info.drive_type}")
+            
+            st.markdown("---")
         
         st.markdown("""
         **Performance Index (PI)** is Forza's way of rating vehicle performance on a scale from 100-999.
@@ -341,13 +360,14 @@ def render_sidebar(similar_cars_count: int, forza_class: str):
         - **S2 Class**: Hypercars
         - **X Class**: Extreme builds
         
-        **✨ Phase 2A Complete:**
+        **✨ Phase 2B Complete:**
+        - 🔍 **VIN decoding** with NHTSA API
         - 🚗 Similar Cars feature
         - 📊 Real FH5 car database
         - 🎯 PI-based matching
         
         **Coming Soon:**
-        - 🔍 VIN lookup integration
+        - 🌐 Real-world performance database
         - 🎨 Enhanced PI algorithms
         - 📱 Mobile optimization
         - 🆚 Car comparison tools
