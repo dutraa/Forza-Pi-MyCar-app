@@ -49,14 +49,54 @@ class RealWorldVehicle:
 class RealWorldDataManager:
     """Manages real-world vehicle data from various sources"""
     
-    def __init__(self, cache_dir: str = "/app/cache"):
-        self.cache_dir = cache_dir
-        self.cache_file = os.path.join(cache_dir, "real_world_data.json")
+    def __init__(self, cache_dir: str = None):
+        # Use a proper cache directory with fallback options
+        if cache_dir is None:
+            # Try multiple cache directory options
+            possible_dirs = [
+                os.path.expanduser("~/.forza_pi_cache"),  # User home directory
+                "/tmp/forza_pi_cache",                     # System temp directory
+                "./cache",                                 # Current directory cache
+            ]
+            
+            cache_dir = None
+            for dir_path in possible_dirs:
+                try:
+                    os.makedirs(dir_path, exist_ok=True)
+                    # Test write permission
+                    test_file = os.path.join(dir_path, "test_write.tmp")
+                    with open(test_file, 'w') as f:
+                        f.write("test")
+                    os.remove(test_file)
+                    cache_dir = dir_path
+                    break
+                except (OSError, PermissionError):
+                    continue
+            
+            # If all attempts fail, disable caching
+            if cache_dir is None:
+                print("Warning: Could not create cache directory. Caching disabled.")
+                self.cache_enabled = False
+                self.cache_dir = None
+                self.cache_file = None
+            else:
+                self.cache_enabled = True
+                self.cache_dir = cache_dir
+                self.cache_file = os.path.join(cache_dir, "real_world_data.json")
+        else:
+            try:
+                os.makedirs(cache_dir, exist_ok=True)
+                self.cache_enabled = True
+                self.cache_dir = cache_dir
+                self.cache_file = os.path.join(cache_dir, "real_world_data.json")
+            except (OSError, PermissionError):
+                print(f"Warning: Could not create cache directory {cache_dir}. Caching disabled.")
+                self.cache_enabled = False
+                self.cache_dir = None
+                self.cache_file = None
+        
         self.google_sheets_id = "1IStNOtVWi8DLEUXqPLAWMPDiIvQzX_msrmFfd4dOfI4"
         self.cache_duration = timedelta(hours=24)  # Cache for 24 hours
-        
-        # Create cache directory if it doesn't exist
-        os.makedirs(cache_dir, exist_ok=True)
         
         # Initialize with sample data if no external source available
         self.vehicles_database = self._load_cached_data()
