@@ -453,7 +453,9 @@ def render_footer():
     </div>
     """, unsafe_allow_html=True)
 
-def render_sidebar(similar_cars_count: int, forza_class: str, vehicle_info: Optional[VehicleInfo] = None):
+def render_sidebar(similar_cars_count: int, forza_class: str, 
+                  vehicle_info: Optional[VehicleInfo] = None,
+                  real_world_vehicle: Optional[Any] = None):
     """Render sidebar with application information"""
     with st.sidebar:
         st.markdown("""
@@ -462,12 +464,39 @@ def render_sidebar(similar_cars_count: int, forza_class: str, vehicle_info: Opti
         </div>
         """, unsafe_allow_html=True)
         
-        # Show VIN vehicle info if available
-        if vehicle_info and vehicle_info.is_valid:
+        # Show real-world vehicle info if available (highest priority)
+        if real_world_vehicle:
+            st.markdown("""
+            <div style="background: linear-gradient(45deg, rgba(50, 205, 50, 0.1) 0%, rgba(34, 139, 34, 0.1) 100%); 
+                        border: 2px solid #32CD32; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                <h4 style="color: #32CD32; text-align: center; margin-bottom: 0.5rem;">🎯 Your Vehicle (Real-World Data)</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            vehicle_name = f"{real_world_vehicle.year} {real_world_vehicle.make} {real_world_vehicle.model}"
+            if real_world_vehicle.trim:
+                vehicle_name += f" {real_world_vehicle.trim}"
+            st.write(f"**{vehicle_name}**")
+            
+            if real_world_vehicle.horsepower:
+                st.write(f"Power: {real_world_vehicle.horsepower} HP")
+            if real_world_vehicle.weight_lbs:
+                st.write(f"Weight: {real_world_vehicle.weight_lbs:,.0f} lbs")
+            if real_world_vehicle.drivetrain:
+                st.write(f"Drive: {real_world_vehicle.drivetrain}")
+            
+            # Show enhanced PI if calculated
+            if hasattr(real_world_vehicle, 'calculated_pi') and real_world_vehicle.calculated_pi:
+                st.write(f"**Enhanced PI: {real_world_vehicle.calculated_pi}**")
+            
+            st.markdown("---")
+        
+        # Show VIN vehicle info if available (and no real-world data)
+        elif vehicle_info and vehicle_info.is_valid:
             st.markdown("""
             <div style="background: linear-gradient(45deg, rgba(0, 191, 255, 0.1) 0%, rgba(30, 144, 255, 0.1) 100%); 
                         border: 2px solid #00bfff; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-                <h4 style="color: #00bfff; text-align: center; margin-bottom: 0.5rem;">🚗 Your Vehicle</h4>
+                <h4 style="color: #00bfff; text-align: center; margin-bottom: 0.5rem;">🔍 Your Vehicle (VIN)</h4>
             </div>
             """, unsafe_allow_html=True)
             
@@ -493,17 +522,18 @@ def render_sidebar(similar_cars_count: int, forza_class: str, vehicle_info: Opti
         - **S2 Class**: Hypercars
         - **X Class**: Extreme builds
         
-        **✨ Phase 2B Complete:**
+        **✨ Phase 2C Complete:**
+        - 🎯 **Real-world data integration** with enhanced PI calculations
         - 🔍 **VIN decoding** with NHTSA API
         - 🚗 Similar Cars feature
         - 📊 Real FH5 car database
         - 🎯 PI-based matching
         
-        **Coming Soon:**
-        - 🌐 Real-world performance database
-        - 🎨 Enhanced PI algorithms
-        - 📱 Mobile optimization
-        - 🆚 Car comparison tools
+        **Enhanced Features:**
+        - 🌐 Authentic vehicle specifications
+        - 🧮 Improved PI calculation formulas
+        - 📈 Confidence scoring
+        - 🔄 Data source tracking
         """)
         
         st.markdown("---")
