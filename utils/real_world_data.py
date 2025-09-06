@@ -415,7 +415,8 @@ class RealWorldDataManager:
                 vehicles = self._parse_csv_data(response.text)
                 if vehicles:
                     self.vehicles_database = vehicles
-                    self._save_cached_data(vehicles)
+                    if self.cache_enabled:
+                        self._save_cached_data(vehicles)
                     return True
                     
         except Exception as e:
