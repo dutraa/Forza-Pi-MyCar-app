@@ -21,13 +21,13 @@ def render_header():
     </div>
     """, unsafe_allow_html=True)
 
-def render_vin_section() -> Tuple[str, Optional[VehicleInfo]]:
-    """Render VIN lookup section and return VIN input and decoded info"""
+def render_vin_section() -> Tuple[str, Optional[VehicleInfo], Optional[Any]]:
+    """Render VIN lookup section and return VIN input, decoded info, and real-world data"""
     st.markdown("""
     <div class="vin-section">
-        <h3 class="section-title" style="color: #00bfff;">🔍 VIN Lookup</h3>
+        <h3 class="section-title" style="color: #00bfff;">🔍 VIN Lookup & Real-World Data</h3>
         <p style="text-align: center; color: #ffffff; opacity: 0.8;">
-            Enter your vehicle's VIN to automatically get vehicle specifications
+            Enter your vehicle's VIN to get specifications and enhanced PI calculations
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -37,8 +37,9 @@ def render_vin_section() -> Tuple[str, Optional[VehicleInfo]]:
                              help="17-character VIN from your vehicle")
     
     vehicle_info = None
+    real_world_vehicle = None
     
-    if st.button("🚀 Decode VIN", help="Get vehicle information from VIN"):
+    if st.button("🚀 Decode VIN & Find Real-World Data", help="Get complete vehicle information and enhanced PI calculation"):
         if vin_input:
             with st.spinner("Decoding VIN..."):
                 vehicle_info = VINDecoder.decode_vin(vin_input)
@@ -48,8 +49,19 @@ def render_vin_section() -> Tuple[str, Optional[VehicleInfo]]:
                 summary = VINDecoder.get_vehicle_summary(vehicle_info)
                 st.success(f"✅ **Vehicle Found:** {summary}")
                 
-                # Show detailed info in expandable section
-                with st.expander("📋 Detailed Vehicle Information"):
+                # Try to find real-world data match
+                with st.spinner("Searching real-world database..."):
+                    if vehicle_info.year and vehicle_info.make and vehicle_info.model:
+                        try:
+                            year = int(vehicle_info.year)
+                            real_world_vehicle = find_real_world_vehicle(
+                                year, vehicle_info.make, vehicle_info.model, vehicle_info.trim
+                            )
+                        except ValueError:
+                            pass
+                
+                # Show VIN decode results
+                with st.expander("📋 VIN Decode Results"):
                     col1, col2 = st.columns(2)
                     
                     with col1:
@@ -81,10 +93,54 @@ def render_vin_section() -> Tuple[str, Optional[VehicleInfo]]:
                         if vehicle_info.transmission_style:
                             st.write(f"**Transmission:** {vehicle_info.transmission_style}")
                 
+                # Show real-world data if found
+                if real_world_vehicle:
+                    st.success("🎯 **Real-World Performance Data Found!**")
+                    
+                    with st.expander("🏁 Real-World Performance Specifications"):
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.write(f"**Horsepower:** {real_world_vehicle.horsepower} HP")
+                            st.write(f"**Torque:** {real_world_vehicle.torque_lbft} lb-ft")
+                            st.write(f"**Weight:** {real_world_vehicle.weight_lbs:,.0f} lbs")
+                            st.write(f"**0-60 mph:** {real_world_vehicle.acceleration_0_60} sec")
+                        
+                        with col2:
+                            st.write(f"**Top Speed:** {real_world_vehicle.top_speed_mph} mph")
+                            if real_world_vehicle.handling_g_force:
+                                st.write(f"**Handling:** {real_world_vehicle.handling_g_force} G")
+                            if real_world_vehicle.braking_60_0_ft:
+                                st.write(f"**Braking 60-0:** {real_world_vehicle.braking_60_0_ft} ft")
+                            st.write(f"**Drivetrain:** {real_world_vehicle.drivetrain}")
+                    
+                    # Calculate enhanced PI
+                    enhanced_pi, confidence = calculate_enhanced_pi(real_world_vehicle)
+                    
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(45deg, rgba(50, 205, 50, 0.1) 0%, rgba(34, 139, 34, 0.1) 100%); 
+                                border: 2px solid #32CD32; border-radius: 12px; padding: 1rem; margin: 1rem 0;">
+                        <h4 style="color: #32CD32; text-align: center; margin-bottom: 0.5rem;">
+                            🎯 Enhanced PI Calculation
+                        </h4>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: #ffaa00; font-weight: bold;">
+                                {enhanced_pi} PI
+                            </div>
+                            <div style="color: #ffffff; opacity: 0.9;">
+                                Confidence: {confidence:.1%} • Real-world data enhanced
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                else:
+                    st.info("💡 **Real-world data not found** for this specific vehicle. Using VIN-based estimates for manual input.")
+                
                 # Show performance hints
                 hints = VINDecoder.extract_performance_hints(vehicle_info)
-                if hints:
-                    st.info("💡 **Performance Hints:** Use the manual input section below. We found some hints that might help with estimates!")
+                if hints and not real_world_vehicle:
+                    st.info("💡 **Performance Hints Available:** Use the manual input section below with VIN-based estimates!")
                     
             else:
                 # Error - show error message
@@ -93,7 +149,7 @@ def render_vin_section() -> Tuple[str, Optional[VehicleInfo]]:
         else:
             st.warning("⚠️ Please enter a VIN to decode.")
     
-    return vin_input, vehicle_info
+    return vin_input, vehicle_info, real_world_vehicle
 
 def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None) -> Tuple[float, float, float, float, float, float]:
     """Render manual input section and return vehicle specifications"""
