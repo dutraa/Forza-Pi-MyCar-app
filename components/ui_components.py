@@ -20,13 +20,13 @@ def render_header():
     </div>
     """, unsafe_allow_html=True)
 
-def render_vin_section() -> str:
-    """Render VIN lookup section and return VIN input"""
+def render_vin_section() -> Tuple[str, Optional[VehicleInfo]]:
+    """Render VIN lookup section and return VIN input and decoded info"""
     st.markdown("""
     <div class="vin-section">
-        <h3 class="section-title" style="color: #00bfff;">🔍 VIN Lookup (Coming Soon!)</h3>
+        <h3 class="section-title" style="color: #00bfff;">🔍 VIN Lookup</h3>
         <p style="text-align: center; color: #ffffff; opacity: 0.8;">
-            Enter your vehicle's VIN to automatically populate specifications
+            Enter your vehicle's VIN to automatically get vehicle specifications
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -35,10 +35,64 @@ def render_vin_section() -> str:
                              placeholder="1HGCM82633A123456", 
                              help="17-character VIN from your vehicle")
     
-    if st.button("🚀 Decode VIN", help="This feature is coming in Phase 2B!"):
-        st.info("🚧 VIN decoding functionality will be added in the next update! For now, please use manual input below.")
+    vehicle_info = None
     
-    return vin_input
+    if st.button("🚀 Decode VIN", help="Get vehicle information from VIN"):
+        if vin_input:
+            with st.spinner("Decoding VIN..."):
+                vehicle_info = VINDecoder.decode_vin(vin_input)
+            
+            if vehicle_info.is_valid:
+                # Success - show vehicle info
+                summary = VINDecoder.get_vehicle_summary(vehicle_info)
+                st.success(f"✅ **Vehicle Found:** {summary}")
+                
+                # Show detailed info in expandable section
+                with st.expander("📋 Detailed Vehicle Information"):
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if vehicle_info.year:
+                            st.write(f"**Year:** {vehicle_info.year}")
+                        if vehicle_info.make:
+                            st.write(f"**Make:** {vehicle_info.make}")
+                        if vehicle_info.model:
+                            st.write(f"**Model:** {vehicle_info.model}")
+                        if vehicle_info.trim:
+                            st.write(f"**Trim:** {vehicle_info.trim}")
+                        if vehicle_info.body_class:
+                            st.write(f"**Body:** {vehicle_info.body_class}")
+                    
+                    with col2:
+                        if vehicle_info.engine_displacement_cc:
+                            cc = vehicle_info.engine_displacement_cc
+                            try:
+                                liters = float(cc) / 1000
+                                st.write(f"**Engine:** {liters:.1f}L ({cc}cc)")
+                            except:
+                                st.write(f"**Engine:** {cc}cc")
+                        if vehicle_info.engine_cylinders:
+                            st.write(f"**Cylinders:** {vehicle_info.engine_cylinders}")
+                        if vehicle_info.fuel_type:
+                            st.write(f"**Fuel:** {vehicle_info.fuel_type}")
+                        if vehicle_info.drive_type:
+                            st.write(f"**Drive:** {vehicle_info.drive_type}")
+                        if vehicle_info.transmission_style:
+                            st.write(f"**Transmission:** {vehicle_info.transmission_style}")
+                
+                # Show performance hints
+                hints = VINDecoder.extract_performance_hints(vehicle_info)
+                if hints:
+                    st.info("💡 **Performance Hints:** Use the manual input section below. We found some hints that might help with estimates!")
+                    
+            else:
+                # Error - show error message
+                st.error(f"❌ **VIN Decode Failed:** {vehicle_info.error_message}")
+                st.info("💡 Please use the manual input section below to enter your vehicle specifications.")
+        else:
+            st.warning("⚠️ Please enter a VIN to decode.")
+    
+    return vin_input, vehicle_info
 
 def render_manual_input_section() -> Tuple[float, float, float, float, float, float]:
     """Render manual input section and return vehicle specifications"""
