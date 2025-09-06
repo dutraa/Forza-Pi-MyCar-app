@@ -151,33 +151,30 @@ def render_vin_section() -> Tuple[str, Optional[VehicleInfo], Optional[Any]]:
     
     return vin_input, vehicle_info, real_world_vehicle
 
-def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None) -> Tuple[float, float, float, float, float, float]:
+def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None, 
+                               real_world_vehicle: Optional[Any] = None) -> Tuple[float, float, float, float, float, float]:
     """Render manual input section and return vehicle specifications"""
     st.markdown("---")
     
-    st.markdown("""
+    # Determine data source and title
+    if real_world_vehicle:
+        section_title = "🎯 Real-World Enhanced Specifications"
+        section_desc = "Pre-filled with authentic real-world data for your vehicle"
+    elif vehicle_info and vehicle_info.is_valid:
+        section_title = "💡 VIN-Enhanced Manual Input"
+        section_desc = "Pre-filled with VIN-based intelligent estimates"
+    else:
+        section_title = "⚙️ Manual Vehicle Specifications"
+        section_desc = "Enter your vehicle's performance specifications"
+    
+    st.markdown(f"""
     <div class="input-section">
-        <h3 class="section-title">⚙️ Manual Vehicle Specifications</h3>
+        <h3 class="section-title">{section_title}</h3>
+        <p style="text-align: center; color: #ffffff; opacity: 0.8; margin-bottom: 1rem;">
+            {section_desc}
+        </p>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Get performance hints if VIN was decoded
-    hints = {}
-    if vehicle_info and vehicle_info.is_valid:
-        hints = VINDecoder.extract_performance_hints(vehicle_info)
-        if hints:
-            st.markdown("""
-            <div style="background: linear-gradient(45deg, rgba(255, 170, 0, 0.1) 0%, rgba(255, 107, 53, 0.1) 100%); 
-                        border: 2px solid #ffaa00; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-                <h4 style="color: #ffaa00; text-align: center; margin-bottom: 0.5rem;">💡 Performance Hints from VIN</h4>
-                <p style="color: #ffffff; text-align: center; opacity: 0.9; font-size: 0.9rem;">
-                    We've detected some vehicle characteristics that might help with your estimates below.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Create sub-columns for input fields
-    input_col1, input_col2 = st.columns(2)
     
     # Widget constraints (min_value, max_value, default)
     HP_MIN, HP_MAX, HP_DEFAULT = 50, 2000, 300
@@ -187,48 +184,87 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None) -> T
     HANDLING_MIN, HANDLING_MAX, HANDLING_DEFAULT = 0.5, 2.0, 1.0
     BRAKING_MIN, BRAKING_MAX, BRAKING_DEFAULT = 80, 200, 120
     
-    # Default values and hints
+    # Default values
     default_hp = HP_DEFAULT
     default_weight = WEIGHT_DEFAULT
+    default_speed = SPEED_DEFAULT
+    default_accel = ACCEL_DEFAULT
+    default_handling = HANDLING_DEFAULT
+    default_braking = BRAKING_DEFAULT
+    
     hp_help = "Engine horsepower (HP)"
     weight_help = "Vehicle curb weight in pounds"
+    speed_help = "Maximum speed in miles per hour"
+    accel_help = "Time to accelerate from 0 to 60 mph"
+    handling_help = "Maximum lateral G-force in cornering"
+    braking_help = "Distance to stop from 60 mph to 0"
     
-    # Apply hints if available with proper validation
+    # Data source indicator
+    data_source = "manual"
     clamped_values = []
-    if hints:
-        if 'estimated_hp_from_displacement' in hints:
-            estimated_hp = hints['estimated_hp_from_displacement']
-            # Clamp to valid range
-            default_hp = max(HP_MIN, min(HP_MAX, estimated_hp))
-            
-            if estimated_hp > HP_MAX:
-                hp_help += f" (Hint: Estimated {estimated_hp} HP from engine - clamped to max {HP_MAX} HP)"
-                clamped_values.append(f"HP: {estimated_hp} → {HP_MAX}")
-            elif estimated_hp < HP_MIN:
-                hp_help += f" (Hint: Estimated {estimated_hp} HP from engine - adjusted to min {HP_MIN} HP)"
-                clamped_values.append(f"HP: {estimated_hp} → {HP_MIN}")
-            else:
-                hp_help += f" (Hint: ~{default_hp} HP estimated from engine size)"
+    
+    # Apply real-world data if available (highest priority)
+    if real_world_vehicle:
+        data_source = "real_world"
         
-        if 'estimated_weight_range' in hints:
-            min_w, max_w = hints['estimated_weight_range']
-            estimated_weight = int((min_w + max_w) / 2)
+        if real_world_vehicle.horsepower:
+            default_hp = max(HP_MIN, min(HP_MAX, int(real_world_vehicle.horsepower)))
+            hp_help = f"Real-world spec: {real_world_vehicle.horsepower} HP"
+            if real_world_vehicle.horsepower > HP_MAX:
+                clamped_values.append(f"HP: {real_world_vehicle.horsepower} → {HP_MAX}")
+        
+        if real_world_vehicle.weight_lbs:
+            default_weight = max(WEIGHT_MIN, min(WEIGHT_MAX, int(real_world_vehicle.weight_lbs)))
+            weight_help = f"Real-world spec: {real_world_vehicle.weight_lbs:,.0f} lbs"
+        
+        if real_world_vehicle.top_speed_mph:
+            default_speed = max(SPEED_MIN, min(SPEED_MAX, int(real_world_vehicle.top_speed_mph)))
+            speed_help = f"Real-world spec: {real_world_vehicle.top_speed_mph} mph"
+        
+        if real_world_vehicle.acceleration_0_60:
+            default_accel = max(ACCEL_MIN, min(ACCEL_MAX, real_world_vehicle.acceleration_0_60))
+            accel_help = f"Real-world spec: {real_world_vehicle.acceleration_0_60} sec"
+        
+        if real_world_vehicle.handling_g_force:
+            default_handling = max(HANDLING_MIN, min(HANDLING_MAX, real_world_vehicle.handling_g_force))
+            handling_help = f"Real-world spec: {real_world_vehicle.handling_g_force} G"
+        
+        if real_world_vehicle.braking_60_0_ft:
+            default_braking = max(BRAKING_MIN, min(BRAKING_MAX, int(real_world_vehicle.braking_60_0_ft)))
+            braking_help = f"Real-world spec: {real_world_vehicle.braking_60_0_ft} ft"
+        
+        st.success("🎯 **Using Real-World Performance Data** - These values are from authentic vehicle specifications!")
+    
+    # Apply VIN hints if real-world data not available
+    elif vehicle_info and vehicle_info.is_valid:
+        data_source = "vin_hints"
+        hints = VINDecoder.extract_performance_hints(vehicle_info)
+        
+        if hints:
+            if 'estimated_hp_from_displacement' in hints:
+                estimated_hp = hints['estimated_hp_from_displacement']
+                default_hp = max(HP_MIN, min(HP_MAX, estimated_hp))
+                
+                if estimated_hp > HP_MAX:
+                    hp_help += f" (VIN hint: {estimated_hp} HP - clamped to max {HP_MAX} HP)"
+                    clamped_values.append(f"HP: {estimated_hp} → {HP_MAX}")
+                else:
+                    hp_help += f" (VIN hint: ~{default_hp} HP from engine size)"
             
-            # Clamp to valid range
-            default_weight = max(WEIGHT_MIN, min(WEIGHT_MAX, estimated_weight))
+            if 'estimated_weight_range' in hints:
+                min_w, max_w = hints['estimated_weight_range']
+                estimated_weight = int((min_w + max_w) / 2)
+                default_weight = max(WEIGHT_MIN, min(WEIGHT_MAX, estimated_weight))
+                weight_help += f" (VIN hint: {min_w:,}-{max_w:,} lbs range)"
             
-            if estimated_weight > WEIGHT_MAX:
-                weight_help += f" (Hint: Estimated {estimated_weight:,} lbs - clamped to max {WEIGHT_MAX:,} lbs)"
-                clamped_values.append(f"Weight: {estimated_weight:,} → {WEIGHT_MAX:,}")
-            elif estimated_weight < WEIGHT_MIN:
-                weight_help += f" (Hint: Estimated {estimated_weight:,} lbs - adjusted to min {WEIGHT_MIN:,} lbs)"
-                clamped_values.append(f"Weight: {estimated_weight:,} → {WEIGHT_MIN:,}")
-            else:
-                weight_help += f" (Hint: Typical range {min_w:,}-{max_w:,} lbs for this vehicle type)"
+            st.info("💡 **Using VIN-Based Estimates** - Adjust these values based on your vehicle's actual performance.")
     
     # Show clamped values warning if any
     if clamped_values:
-        st.warning(f"⚠️ **Values Adjusted:** Some estimates exceeded limits and were adjusted: {', '.join(clamped_values)}")
+        st.warning(f"⚠️ **Values Adjusted:** {', '.join(clamped_values)}")
+    
+    # Create sub-columns for input fields
+    input_col1, input_col2 = st.columns(2)
     
     with input_col1:
         hp = st.number_input("🔥 Horsepower (HP)", 
@@ -246,48 +282,54 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None) -> T
                                help=weight_help)
         
         top_speed = st.number_input("💨 Top Speed (mph)", 
-                                  value=SPEED_DEFAULT, 
+                                  value=default_speed, 
                                   step=5, 
                                   min_value=SPEED_MIN, 
                                   max_value=SPEED_MAX,
-                                  help="Maximum speed in miles per hour")
+                                  help=speed_help)
     
     with input_col2:
         acceleration = st.number_input("⏱️ 0-60 mph Time (seconds)", 
-                                     value=ACCEL_DEFAULT, 
+                                     value=default_accel, 
                                      step=0.1, 
                                      min_value=ACCEL_MIN, 
                                      max_value=ACCEL_MAX,
-                                     help="Time to accelerate from 0 to 60 mph")
+                                     help=accel_help)
         
         handling = st.number_input("🌀 Handling G-Force", 
-                                 value=HANDLING_DEFAULT, 
+                                 value=default_handling, 
                                  step=0.01, 
                                  min_value=HANDLING_MIN, 
                                  max_value=HANDLING_MAX,
-                                 help="Maximum lateral G-force in cornering")
+                                 help=handling_help)
         
         braking = st.number_input("🛑 Braking Distance 60-0 (feet)", 
-                                value=BRAKING_DEFAULT, 
+                                value=default_braking, 
                                 step=5, 
                                 min_value=BRAKING_MIN, 
                                 max_value=BRAKING_MAX,
-                                help="Distance to stop from 60 mph to 0")
+                                help=braking_help)
     
-    # Show additional VIN info if available
-    if vehicle_info and vehicle_info.is_valid and hints:
-        with st.expander("🔧 Additional Vehicle Details"):
-            if 'engine_cylinders' in hints:
-                st.write(f"**Engine Configuration:** {hints['engine_cylinders']} cylinders")
-            
-            if 'performance_fuel' in hints:
-                st.write("**Fuel Type:** Premium/High Octane (Performance oriented)")
-            
-            if 'electric_vehicle' in hints:
-                st.write("**Powertrain:** Electric Vehicle")
-            
-            if 'all_wheel_drive' in hints:
-                st.write("**Drive Type:** All-Wheel Drive (Added weight and traction)")
+    # Show data source info
+    if data_source == "real_world":
+        confidence_score = getattr(real_world_vehicle, 'confidence_score', 0.9)
+        st.markdown(f"""
+        <div style="background: rgba(50, 205, 50, 0.1); border-left: 4px solid #32CD32; padding: 0.5rem; margin: 1rem 0;">
+            <small style="color: #32CD32;">
+                📊 <strong>Data Source:</strong> Real-world specifications 
+                | <strong>Confidence:</strong> {confidence_score:.1%}
+                | <strong>Last Updated:</strong> {getattr(real_world_vehicle, 'last_updated', 'Unknown')[:10]}
+            </small>
+        </div>
+        """, unsafe_allow_html=True)
+    elif data_source == "vin_hints":
+        st.markdown(f"""
+        <div style="background: rgba(255, 170, 0, 0.1); border-left: 4px solid #ffaa00; padding: 0.5rem; margin: 1rem 0;">
+            <small style="color: #ffaa00;">
+                🔍 <strong>Data Source:</strong> VIN-based estimates from NHTSA database
+            </small>
+        </div>
+        """, unsafe_allow_html=True)
     
     return hp, weight, top_speed, acceleration, handling, braking
 
