@@ -29,11 +29,11 @@ def main():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # VIN lookup section
-        vin_input = render_vin_section()
+        # VIN lookup section - now returns vehicle info
+        vin_input, vehicle_info = render_vin_section()
         
-        # Manual input section
-        hp, weight, top_speed, acceleration, handling, braking = render_manual_input_section()
+        # Manual input section - now can use VIN hints
+        hp, weight, top_speed, acceleration, handling, braking = render_manual_input_section(vehicle_info)
     
     with col2:
         # Calculate PI and class
@@ -54,8 +54,8 @@ def main():
     # Footer
     render_footer()
     
-    # Sidebar
-    render_sidebar(len(similar_cars), forza_class)
+    # Sidebar - now shows VIN info if available
+    render_sidebar(len(similar_cars), forza_class, vehicle_info)
 
 if __name__ == "__main__":
     main()
