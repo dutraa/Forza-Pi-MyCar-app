@@ -155,34 +155,50 @@ def get_forza_css():
             color: #ffaa00;
         }
         
-        /* Button styling */
+        /* Button styling - Fixed for better visibility */
         .stButton > button {
             background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%) !important;
-            color: white !important;
-            border: none !important;
+            color: #ffffff !important;
+            border: 2px solid #ff6b35 !important;
             border-radius: 8px !important;
             font-family: 'Rajdhani', sans-serif !important;
-            font-weight: 600 !important;
+            font-weight: 700 !important;
             font-size: 1.1rem !important;
             padding: 0.7rem 2rem !important;
             box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4) !important;
             transition: all 0.3s ease !important;
             opacity: 1 !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+            min-height: 3rem !important;
+            cursor: pointer !important;
         }
         
         .stButton > button:hover {
+            background: linear-gradient(45deg, #e55a2e 0%, #e6841a 100%) !important;
+            color: #ffffff !important;
             transform: translateY(-2px) !important;
             box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6) !important;
+            border-color: #e55a2e !important;
         }
         
         .stButton > button:focus {
             background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%) !important;
-            color: white !important;
-            outline: none !important;
+            color: #ffffff !important;
+            outline: 2px solid #ffaa00 !important;
+            outline-offset: 2px !important;
         }
         
         .stButton > button:active {
-            background: linear-gradient(45deg, #e55a2e 0%, #e6841a 100%) !important;
+            background: linear-gradient(45deg, #d14b20 0%, #d1751a 100%) !important;
+            color: #ffffff !important;
+            transform: translateY(0px) !important;
+        }
+        
+        .stButton > button:disabled {
+            background: #666666 !important;
+            color: #cccccc !important;
+            border-color: #666666 !important;
+            cursor: not-allowed !important;
         }
         
         /* Input field styling */
