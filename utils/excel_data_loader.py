@@ -110,7 +110,6 @@ def load_excel_vehicle_data(file_path: str = "Real_Life_Forza_PI_Calculator.xlsx
                     top_speed_mph=top_speed,
                     acceleration_0_60=acceleration,
                     braking_60_0_ft=braking,
-                    engine_type=engine,
                     drivetrain=drivetrain,
                     calculated_pi=excel_pi,
                     pi_source="excel_calculator" if excel_pi else None,
