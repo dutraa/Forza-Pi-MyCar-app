@@ -94,7 +94,7 @@ def render_vin_section() -> Tuple[str, Optional[VehicleInfo]]:
     
     return vin_input, vehicle_info
 
-def render_manual_input_section() -> Tuple[float, float, float, float, float, float]:
+def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None) -> Tuple[float, float, float, float, float, float]:
     """Render manual input section and return vehicle specifications"""
     st.markdown("---")
     
@@ -104,18 +104,99 @@ def render_manual_input_section() -> Tuple[float, float, float, float, float, fl
     </div>
     """, unsafe_allow_html=True)
     
+    # Get performance hints if VIN was decoded
+    hints = {}
+    if vehicle_info and vehicle_info.is_valid:
+        hints = VINDecoder.extract_performance_hints(vehicle_info)
+        if hints:
+            st.markdown("""
+            <div style="background: linear-gradient(45deg, rgba(255, 170, 0, 0.1) 0%, rgba(255, 107, 53, 0.1) 100%); 
+                        border: 2px solid #ffaa00; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                <h4 style="color: #ffaa00; text-align: center; margin-bottom: 0.5rem;">💡 Performance Hints from VIN</h4>
+                <p style="color: #ffffff; text-align: center; opacity: 0.9; font-size: 0.9rem;">
+                    We've detected some vehicle characteristics that might help with your estimates below.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+    
     # Create sub-columns for input fields
     input_col1, input_col2 = st.columns(2)
     
+    # Default values and hints
+    default_hp = 300
+    default_weight = 3500
+    hp_help = "Engine horsepower (HP)"
+    weight_help = "Vehicle curb weight in pounds"
+    
+    # Apply hints if available
+    if hints:
+        if 'estimated_hp_from_displacement' in hints:
+            default_hp = hints['estimated_hp_from_displacement']
+            hp_help += f" (Hint: ~{default_hp} HP estimated from engine size)"
+        
+        if 'estimated_weight_range' in hints:
+            min_w, max_w = hints['estimated_weight_range']
+            default_weight = int((min_w + max_w) / 2)  # Use middle of range
+            weight_help += f" (Hint: Typical range {min_w:,}-{max_w:,} lbs for this vehicle type)"
+    
     with input_col1:
-        hp = st.number_input("🔥 Horsepower (HP)", value=300, step=10, min_value=50, max_value=2000)
-        weight = st.number_input("⚖️ Weight (lbs)", value=3500, step=50, min_value=1000, max_value=8000)
-        top_speed = st.number_input("💨 Top Speed (mph)", value=150, step=5, min_value=60, max_value=300)
+        hp = st.number_input("🔥 Horsepower (HP)", 
+                           value=default_hp, 
+                           step=10, 
+                           min_value=50, 
+                           max_value=2000,
+                           help=hp_help)
+        
+        weight = st.number_input("⚖️ Weight (lbs)", 
+                               value=default_weight, 
+                               step=50, 
+                               min_value=1000, 
+                               max_value=8000,
+                               help=weight_help)
+        
+        top_speed = st.number_input("💨 Top Speed (mph)", 
+                                  value=150, 
+                                  step=5, 
+                                  min_value=60, 
+                                  max_value=300,
+                                  help="Maximum speed in miles per hour")
     
     with input_col2:
-        acceleration = st.number_input("⏱️ 0-60 mph Time (seconds)", value=5.0, step=0.1, min_value=2.0, max_value=15.0)
-        handling = st.number_input("🌀 Handling G-Force", value=1.0, step=0.01, min_value=0.5, max_value=2.0)
-        braking = st.number_input("🛑 Braking Distance 60-0 (feet)", value=120, step=5, min_value=80, max_value=200)
+        acceleration = st.number_input("⏱️ 0-60 mph Time (seconds)", 
+                                     value=5.0, 
+                                     step=0.1, 
+                                     min_value=2.0, 
+                                     max_value=15.0,
+                                     help="Time to accelerate from 0 to 60 mph")
+        
+        handling = st.number_input("🌀 Handling G-Force", 
+                                 value=1.0, 
+                                 step=0.01, 
+                                 min_value=0.5, 
+                                 max_value=2.0,
+                                 help="Maximum lateral G-force in cornering")
+        
+        braking = st.number_input("🛑 Braking Distance 60-0 (feet)", 
+                                value=120, 
+                                step=5, 
+                                min_value=80, 
+                                max_value=200,
+                                help="Distance to stop from 60 mph to 0")
+    
+    # Show additional VIN info if available
+    if vehicle_info and vehicle_info.is_valid and hints:
+        with st.expander("🔧 Additional Vehicle Details"):
+            if 'engine_cylinders' in hints:
+                st.write(f"**Engine Configuration:** {hints['engine_cylinders']} cylinders")
+            
+            if 'performance_fuel' in hints:
+                st.write("**Fuel Type:** Premium/High Octane (Performance oriented)")
+            
+            if 'electric_vehicle' in hints:
+                st.write("**Powertrain:** Electric Vehicle")
+            
+            if 'all_wheel_drive' in hints:
+                st.write("**Drive Type:** All-Wheel Drive (Added weight and traction)")
     
     return hp, weight, top_speed, acceleration, handling, braking
 
