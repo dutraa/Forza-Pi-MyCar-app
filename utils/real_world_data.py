@@ -101,46 +101,6 @@ class RealWorldDataManager:
         # Initialize with sample data
         self.vehicles_database = self._load_cached_data()
     
-    def _load_all_data(self) -> List[RealWorldVehicle]:
-        """Load all available data sources"""
-        # First try cached data
-        cached_vehicles = self._load_cached_data()
-        
-        # Try to load Excel data if available
-        excel_vehicles = []
-        try:
-            from utils.excel_data_loader import load_excel_vehicle_data
-            excel_vehicles = load_excel_vehicle_data()
-            if excel_vehicles:
-                print(f"Loaded {len(excel_vehicles)} vehicles from Excel file")
-        except ImportError:
-            pass  # Excel loader not available
-        except Exception as e:
-            print(f"Could not load Excel data: {e}")
-        
-        # Combine all data sources, prioritizing Excel data
-        all_vehicles = []
-        seen_vehicles = set()
-        
-        # Add Excel vehicles first (highest priority)
-        for vehicle in excel_vehicles:
-            vehicle_key = (vehicle.year, vehicle.make.lower(), vehicle.model.lower())
-            if vehicle_key not in seen_vehicles:
-                all_vehicles.append(vehicle)
-                seen_vehicles.add(vehicle_key)
-        
-        # Add cached/sample vehicles that don't conflict
-        for vehicle in cached_vehicles:
-            vehicle_key = (vehicle.year, vehicle.make.lower(), vehicle.model.lower())
-            if vehicle_key not in seen_vehicles:
-                all_vehicles.append(vehicle)
-                seen_vehicles.add(vehicle_key)
-        
-        if excel_vehicles:
-            print(f"Combined data: {len(all_vehicles)} total vehicles ({len(excel_vehicles)} from Excel, {len(cached_vehicles)} from samples)")
-        
-        return all_vehicles
-    
     def _load_cached_data(self) -> List[RealWorldVehicle]:
         """Load cached real-world vehicle data"""
         if not self.cache_enabled or not os.path.exists(self.cache_file):
