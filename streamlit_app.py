@@ -33,7 +33,7 @@ def main():
         vin_input, vehicle_info, real_world_vehicle = render_vin_section()
         
         # Manual input section - now can use both VIN hints and real-world data
-        hp, weight, top_speed, acceleration, handling, braking = render_manual_input_section(vehicle_info, real_world_vehicle)
+        hp, torque, weight, top_speed, acceleration, handling, braking = render_manual_input_section(vehicle_info, real_world_vehicle)
     
     with col2:
         # Calculate PI and class
