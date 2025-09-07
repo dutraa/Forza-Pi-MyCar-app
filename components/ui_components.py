@@ -152,7 +152,7 @@ def render_vin_section() -> Tuple[str, Optional[VehicleInfo], Optional[Any]]:
     return vin_input, vehicle_info, real_world_vehicle
 
 def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None, 
-                               real_world_vehicle: Optional[Any] = None) -> Tuple[float, float, float, float, float, float]:
+                               real_world_vehicle: Optional[Any] = None) -> Tuple[float, float, float, float, float, float, float]:
     """Render manual input section and return vehicle specifications"""
     st.markdown("---")
     
@@ -178,6 +178,7 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
     
     # Widget constraints (min_value, max_value, default)
     HP_MIN, HP_MAX, HP_DEFAULT = 50, 2000, 300
+    TORQUE_MIN, TORQUE_MAX, TORQUE_DEFAULT = 50, 1000, 300
     WEIGHT_MIN, WEIGHT_MAX, WEIGHT_DEFAULT = 1000, 8000, 3500
     SPEED_MIN, SPEED_MAX, SPEED_DEFAULT = 60, 300, 150
     ACCEL_MIN, ACCEL_MAX, ACCEL_DEFAULT = 2.0, 15.0, 5.0
@@ -186,6 +187,7 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
     
     # Default values
     default_hp = HP_DEFAULT
+    default_torque = TORQUE_DEFAULT
     default_weight = WEIGHT_DEFAULT
     default_speed = SPEED_DEFAULT
     default_accel = ACCEL_DEFAULT
@@ -193,6 +195,7 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
     default_braking = BRAKING_DEFAULT
     
     hp_help = "Engine horsepower (HP)"
+    torque_help = "Engine torque (lb-ft)"
     weight_help = "Vehicle curb weight in pounds"
     speed_help = "Maximum speed in miles per hour"
     accel_help = "Time to accelerate from 0 to 60 mph"
@@ -212,6 +215,12 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
             hp_help = f"Real-world spec: {real_world_vehicle.horsepower} HP"
             if real_world_vehicle.horsepower > HP_MAX:
                 clamped_values.append(f"HP: {real_world_vehicle.horsepower} → {HP_MAX}")
+        
+        if real_world_vehicle.torque_lbft:
+            default_torque = max(TORQUE_MIN, min(TORQUE_MAX, int(real_world_vehicle.torque_lbft)))
+            torque_help = f"Real-world spec: {real_world_vehicle.torque_lbft} lb-ft"
+            if real_world_vehicle.torque_lbft > TORQUE_MAX:
+                clamped_values.append(f"Torque: {real_world_vehicle.torque_lbft} → {TORQUE_MAX}")
         
         if real_world_vehicle.weight_lbs:
             default_weight = max(WEIGHT_MIN, min(WEIGHT_MAX, int(real_world_vehicle.weight_lbs)))
@@ -263,8 +272,8 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
     if clamped_values:
         st.warning(f"⚠️ **Values Adjusted:** {', '.join(clamped_values)}")
     
-    # Create sub-columns for input fields
-    input_col1, input_col2 = st.columns(2)
+    # Create three columns for better layout
+    input_col1, input_col2, input_col3 = st.columns(3)
     
     with input_col1:
         hp = st.number_input("🔥 Horsepower (HP)", 
@@ -281,27 +290,27 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
                                max_value=WEIGHT_MAX,
                                help=weight_help)
         
-        top_speed = st.number_input("💨 Top Speed (mph)", 
-                                  value=default_speed, 
-                                  step=5, 
-                                  min_value=SPEED_MIN, 
-                                  max_value=SPEED_MAX,
-                                  help=speed_help)
-    
-    with input_col2:
-        acceleration = st.number_input("⏱️ 0-60 mph Time (seconds)", 
-                                     value=default_accel, 
-                                     step=0.1, 
-                                     min_value=ACCEL_MIN, 
-                                     max_value=ACCEL_MAX,
-                                     help=accel_help)
-        
         handling = st.number_input("🌀 Handling G-Force", 
                                  value=default_handling, 
                                  step=0.01, 
                                  min_value=HANDLING_MIN, 
                                  max_value=HANDLING_MAX,
                                  help=handling_help)
+    
+    with input_col2:
+        torque = st.number_input("💪 Torque (lb-ft)", 
+                               value=default_torque, 
+                               step=10, 
+                               min_value=TORQUE_MIN, 
+                               max_value=TORQUE_MAX,
+                               help=torque_help)
+        
+        top_speed = st.number_input("💨 Top Speed (mph)", 
+                                  value=default_speed, 
+                                  step=5, 
+                                  min_value=SPEED_MIN, 
+                                  max_value=SPEED_MAX,
+                                  help=speed_help)
         
         braking = st.number_input("🛑 Braking Distance 60-0 (feet)", 
                                 value=default_braking, 
@@ -309,6 +318,14 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
                                 min_value=BRAKING_MIN, 
                                 max_value=BRAKING_MAX,
                                 help=braking_help)
+    
+    with input_col3:
+        acceleration = st.number_input("⏱️ 0-60 mph Time (seconds)", 
+                                     value=default_accel, 
+                                     step=0.1, 
+                                     min_value=ACCEL_MIN, 
+                                     max_value=ACCEL_MAX,
+                                     help=accel_help)
     
     # Show data source info
     if data_source == "real_world":
@@ -331,7 +348,7 @@ def render_manual_input_section(vehicle_info: Optional[VehicleInfo] = None,
         </div>
         """, unsafe_allow_html=True)
     
-    return hp, weight, top_speed, acceleration, handling, braking
+    return hp, torque, weight, top_speed, acceleration, handling, braking
 
 def render_results_section(pi: int, forza_class: str):
     """Render the PI results section"""
